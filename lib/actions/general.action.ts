@@ -97,3 +97,29 @@ export async function getFeebackByInterviewId(params:GetFeedbackByInterviewIdPar
         id:feedbackDoc.id, ...feedbackDoc.data()
     } as Feedback;
 }
+
+export async function createRetakeInterview(interviewId: string, userId: string): Promise<{ success: boolean; newInterviewId?: string }> {
+    const { db } = initFirebaseAdmin();
+
+    try {
+        // Fetch the original interview
+        const originalInterview = await getInterviewById(interviewId);
+        if (!originalInterview) {
+            return { success: false };
+        }
+
+        // Create a new interview record with the same details but a new ID and timestamp
+        const newInterview = {
+            ...originalInterview,
+            userId,
+            createdAt: new Date().toISOString(),
+            finalized: false, // Ensure the new interview is marked as not finalized
+        };
+
+        const interviewRef = await db.collection('interviews').add(newInterview);
+        return { success: true, newInterviewId: interviewRef.id };
+    } catch (error) {
+        console.error("Error creating retake interview", error);
+        return { success: false };
+    }
+}
